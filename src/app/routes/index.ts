@@ -8,6 +8,38 @@ const moduleRoutes = [
     path: "/auth",
     route: AuthRoutes,
   },
+  // {
+  //   path: "/permissions",
+  //   route: PermissionRoutes,
+  // },
+  // {
+  //   path: "/roles",
+  //   route: RoleRoutes,
+  // },
+  // {
+  //   path: "/users",
+  //   route: UserRoutes,
+  // },
+  // {
+  //   path: "/media",
+  //   route: MediaRoutes,
+  // },
+  // {
+  //   path: "/categories",
+  //   route: CategoryRoutes,
+  // },
+  // {
+  //   path: "/brands",
+  //   route: BrandRoutes,
+  // },
+  // {
+  //   path: "/attributes",
+  //   route: AttributeRoutes,
+  // },
+  // {
+  //   path: "/products",
+  //   route: ProductRoutes,
+  // },
 ];
 
 moduleRoutes.forEach((route) => {

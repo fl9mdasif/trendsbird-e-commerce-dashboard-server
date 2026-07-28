@@ -8,19 +8,31 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
+  let authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json(sendError("Token required", 401));
   }
 
-  const token = authHeader.split(" ")[1];
+  // Handle array or comma-separated headers if Postman/proxy sends duplicate headers
+  if (Array.isArray(authHeader)) {
+    authHeader = authHeader[0];
+  }
+  if (authHeader.includes(",")) {
+    authHeader = authHeader.split(",")[0];
+  }
+
+  let token = authHeader.trim();
+  if (token.startsWith("Bearer ")) {
+    token = token.slice(7).trim();
+  }
+
   if (!token) {
     return res.status(401).json(sendError("Token required", 401));
   }
 
   try {
     const payload = verifyAccessToken(token);
-    
+
     // Fetch user and include permissions
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
@@ -81,5 +93,4 @@ export const requirePermission = (permission: string) => {
   };
 };
 
-// Default export to support previous pattern if needed
 export default authMiddleware;

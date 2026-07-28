@@ -54,9 +54,19 @@ const loginUser = async (payload: any) => {
 };
 
 const refreshTokens = async (refreshToken: string) => {
+  if (!refreshToken) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Refresh token required");
+  }
+
+  // Clean token in case user included 'Bearer ' prefix or extra quotes
+  let cleanToken = refreshToken.trim();
+  if (cleanToken.startsWith("Bearer ")) {
+    cleanToken = cleanToken.slice(7).trim();
+  }
+
   let decodedPayload;
   try {
-    decodedPayload = verifyRefreshToken(refreshToken);
+    decodedPayload = verifyRefreshToken(cleanToken);
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid or expired token");
   }
@@ -77,7 +87,7 @@ const refreshTokens = async (refreshToken: string) => {
   }
 
   // Verify stored refresh token hash
-  const isMatched = await bcrypt.compare(refreshToken, user.refreshToken);
+  const isMatched = await bcrypt.compare(cleanToken, user.refreshToken);
   if (!isMatched) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid or expired token");
   }
