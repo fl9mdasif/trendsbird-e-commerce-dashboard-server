@@ -1,6 +1,6 @@
+"use strict";
 // import nodemailer from "nodemailer";
 // import config from "../../config";
-
 // const emailSender = async (email: string, html: string) => {
 //   const transporter = nodemailer.createTransport({
 //     host: "smtp.gmail.com",
@@ -14,7 +14,6 @@
 //       rejectUnauthorized: false,
 //     },
 //   });
-
 //   const info = await transporter.sendMail({
 //     from: '"PH Health Care" <asifalazadami2016@gmail.com>', // sender address
 //     to: email, // list of receivers
@@ -22,8 +21,7 @@
 //     //text: "Hello world?", // plain text body
 //     html, // html body
 //   });
-
 //   //console.log("Message sent: %s", info.messageId);
 // };
-
 // export default emailSender;
+//# sourceMappingURL=emailSender.js.map

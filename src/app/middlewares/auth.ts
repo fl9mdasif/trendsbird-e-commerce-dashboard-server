@@ -8,20 +8,16 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  let authHeader = req.headers.authorization;
-  if (!authHeader) {
+  const rawHeader = req.headers.authorization;
+  if (!rawHeader) {
     return res.status(401).json(sendError("Token required", 401));
   }
 
-  // Handle array or comma-separated headers if Postman/proxy sends duplicate headers
-  if (Array.isArray(authHeader)) {
-    authHeader = authHeader[0];
-  }
-  if (authHeader.includes(",")) {
-    authHeader = authHeader.split(",")[0];
-  }
+  // Handle array or comma-separated headers cleanly
+  const authHeader = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
+  const singleHeader = authHeader.includes(",") ? authHeader.split(",")[0] : authHeader;
 
-  let token = authHeader.trim();
+  let token = singleHeader.trim();
   if (token.startsWith("Bearer ")) {
     token = token.slice(7).trim();
   }
