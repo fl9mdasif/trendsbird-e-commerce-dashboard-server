@@ -1,145 +1,171 @@
-# Trends Bird Limited — Backend Developer Intern Assessment
+# 🚀 Trends Bird E-Commerce Dashboard — Backend Server API
 
-Express + TypeScript + Prisma + PostgreSQL (Supabase) modular backend.
-
-- **Developer:** Md Asif Al Azad
-- **Deadline:** 1 August 2026, 11:59 PM
-- **Deploy Environment:** Vercel Serverless Function
-- **Database:** Supabase (PostgreSQL)
-- **Storage:** Supabase Storage (Free tier bucket)
+An enterprise-grade, highly secure RESTful API backend engineered for an E-Commerce Management Dashboard. Built with **Node.js, Express, TypeScript, Prisma 7, PostgreSQL (Supabase), Zod, and Supabase Cloud Storage**.
 
 ---
 
-## Technical Features Implemented
+## 🛠️ Tech Stack & Key Technologies
 
-1. **Access Control & Permissions**:
-   - Middleware-driven authorization via `Bearer <JWT_Access_Token>` in header.
-   - Robust wildcard permissions (e.g., `product:*` grants access to `product:create`, `product:read`, etc.).
-   - Cascade and restrict guards applied to database level via Prisma schema.
-2. **JWT Security & Token Rotation**:
-   - Access token expires in **15 minutes**.
-   - Refresh token expires in **7 days**, stored as a bcrypt hash in the database.
-   - Token rotation on every refresh request, and database revocation on logout (set to `null`).
-   - Secure authentication response: same `"Invalid credentials"` message returned on wrong email/password.
-3. **Optimized File Uploads (Vercel Ready)**:
-   - Multer initialized with `memoryStorage` (zero disk write dependency for Serverless).
-   - Sharp handles image resizing (max 1200px dimension) and 200x200px thumbnail rendering before upload.
-   - Saves optimized files directly to Supabase Storage and records public URL path in the DB.
-4. **Safety Guards**:
-   - **No Public Signup**: Users can only be created by an authenticated user with `user:create` permission.
-   - **Self-Escalation Check**: Users cannot change their own roles.
-   - **Circular Categories check**: Category updates check parents recursively to prevent tree cycle dependencies.
-   - **Reference check guards**: Prevents deleting brands, roles, and media attachments if they are associated with existing records.
-5. **Transactional Product Creation**:
-   - DB transaction ensures creation of simple or variable products rolls back entirely if any variant combination duplicate, SKU constraint, or category link fails.
+- **Core Runtime:** Node.js (v18+)
+- **Language:** TypeScript (Strict Mode)
+- **Web Framework:** Express.js (v5)
+- **Database & ORM:** PostgreSQL (Supabase) with Prisma ORM 7 (`@prisma/adapter-pg` driver adapters)
+- **Cloud Storage:** Supabase Storage Bucket Integration
+- **Media Optimization:** Sharp (WebP conversion, thumbnail generation, resolution scaling)
+- **Validation Engine:** Zod (Type-safe schema validation)
+- **Security & Authentication:** JSON Web Tokens (JWT), Bcrypt (12 Salt Rounds), Role-Based Access Control (RBAC)
+- **Deployment Platform:** Vercel Serverless Functions (`@vercel/node`)
 
 ---
 
-## Local Setup & Installation
+## ⚡ Architectural Highlights & Business Rules
 
-### 1. Configure Environment Variables
-Create a `.env` file in the root directory based on `.env.example`:
+### 1. Dual-Token Authentication & Refresh Rotation
+- **Access Tokens:** Short-lived JWTs (stateless verification for maximum server speed).
+- **Refresh Tokens:** Long-lived tokens stored as **Bcrypt hashes** in PostgreSQL. Automatically rotated upon each refresh to prevent token reuse and replay attacks.
+- **Anti-Enumeration Guard:** Login credential errors return uniform `"Invalid credentials"` messages to prevent user email probing.
 
-```env
-DATABASE_URL=postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
-DIRECT_URL=postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
-ACCESS_JWT_SECRET=your-access-secret-at-least-32-chars-long
-REFRESH_JWT_SECRET=your-refresh-secret-at-least-32-chars-long
-ACCESS_JWT_EXPIRES=15m
-REFRESH_JWT_EXPIRES=7d
-BCRYPT_ROUNDS=12
-SUPABASE_URL=https://[ref].supabase.co
-SUPABASE_SERVICE_KEY=your-supabase-service-role-key
-SUPABASE_BUCKET=media
-MAX_FILE_SIZE_MB=10
-ALLOWED_MIME_TYPES=image/jpeg,image/png,image/webp,image/gif,video/mp4
-PORT=3001
-NODE_ENV=development
+### 2. Fine-Grained Role-Based Access Control (RBAC)
+- Supports granular action permissions (`product:create`, `user:delete`), module wildcards (`product:*`), and global superadmin wildcards (`*`).
+- **Role Lockout Guard:** Prevents removing the `role:update` permission from the final remaining admin role to prevent administrative lockout.
+- **Role Deletion Guard:** Refuses role deletion if active users are assigned to it.
+
+### 3. Product Catalog Architecture (ACID Transactions)
+- **Simple vs. Variable Products:** Simple products maintain top-level pricing/stock; Variable products maintain `null` top-level pricing and delegate pricing/SKU/attributes to individual variants.
+- **Prisma Transactions:** Product creation spans 5 tables (`Product`, `ProductCategory`, `MediaAttachment`, `Variant`, `VariantAttribute`) wrapped inside `prisma.$transaction` for 100% ACID compliance.
+- **Duplicate Variant Combination Check:** Real-time hash checking prevents duplicate variant attribute combinations.
+
+### 4. Category Tree Structure & Cycle Detection
+- Supports flat data fetching or nested tree JSON output (`GET /api/v1/categories?tree=true`) constructed in $O(N)$ time.
+- **Cycle Detection Algorithm:** Prevents circular parent-child dependency loops during category hierarchy updates.
+
+### 5. Media Processing & Serverless Compatibility
+- Uses Multer `memoryStorage` for compatibility with Vercel serverless functions.
+- Automatically converts uploaded images into lightweight `.webp` formats (80% compression) and generates 200x200px cover thumbnails using Sharp.
+- **Attachment Guard:** Protects media files from deletion if currently referenced by catalog products.
+
+---
+
+## 📦 Project Directory Structure
+
+```text
+server/
+├── api/
+│   └── index.ts                 # Serverless Entry Point for Vercel
+├── prisma/
+│   ├── schema.prisma            # PostgreSQL Database Schema
+│   └── seed.ts                  # Super Admin & Catalog Manager Seed Script
+├── src/
+│   ├── app/
+│   │   ├── errors/              # Custom ApiError Classes
+│   │   ├── interfaces/          # TypeScript Types & Request Interfaces
+│   │   ├── middlewares/         # Auth, RequirePermission, Zod Validation, Global Error
+│   │   ├── modules/
+│   │   │   ├── attribute/       # Attribute & Value Management
+│   │   │   ├── auth/            # JWT Login, Session, Refresh Rotation, Logout
+│   │   │   ├── brand/           # Brand Management
+│   │   │   ├── category/        # Category Tree & Cycle Detection
+│   │   │   ├── media/           # Sharp Image Processing & Supabase Upload
+│   │   │   ├── permission/      # Permission Groups CRUD
+│   │   │   ├── product/         # Transactional Simple & Variable Products
+│   │   │   ├── role/            # Role CRUD & Permission Mapping
+│   │   │   └── user/            # User Management & Self-Escalation Guard
+│   │   └── routes/              # Centralized Module Router
+│   ├── config/                  # Envt Variables Loading & Supabase Client
+│   ├── helpers/                 # Pagination & JWT Helper Functions
+│   ├── shared/                  # Response Formatter & Prisma Instance
+│   ├── app.ts                   # Express Application Setup
+│   └── server.ts                # Local Server Startup Entrypoint
+├── .env.example                 # Environment Variable Template
+├── prisma.config.ts             # Prisma 7 Datasource Configuration
+├── tsconfig.json                # TypeScript Config
+└── vercel.json                  # Vercel Deployment Routing Config
 ```
 
-### 2. Install Dependencies
-Run the following command to download NPM packages:
+---
+
+## 🚀 Getting Started & Local Development Guide
+
+### 1. Prerequisites
+- Node.js (v18 or higher)
+- npm or pnpm
+- PostgreSQL Database (Supabase PostgreSQL instance recommended)
+
+### 2. Clone the Repository
+```bash
+git clone <repository-url>
+cd server
+```
+
+### 3. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. Setup Database Schema & Seed
-Sync your Supabase PostgreSQL database schema and run the seed script to create initial credentials:
+### 4. Configure Environment Variables
+Copy `.env.example` to create your local `.env` file:
 ```bash
-# Push database schema
-npx prisma db push
+cp .env.example .env
+```
+Fill in your database connection string and Supabase Storage credentials in `.env`.
 
-# Generate client
-npm run prisma:generate
+### 5. Generate Prisma Client & Run Database Migrations
+```bash
+npx prisma generate
+npx prisma migrate dev --name init
+```
 
-# Populate database
+### 6. Seed the Database
+Populates initial permissions, Super Admin (`superadmin@trendsbird.com`), and Catalog Manager roles/users:
+```bash
 npm run prisma:seed
 ```
 
-### 4. Start Server
-Run the local dev server (using ts-node-dev):
+### 7. Start Development Server
 ```bash
 npm run dev
 ```
-The server will boot on `http://localhost:3001` (or your configured port).
+The server will start at `http://localhost:3001` (or your configured `PORT`).
 
 ---
 
-## Seed Accounts Credentials
+## 📑 API Endpoints Summary
 
-- **Super Admin**:
-  - **Email:** `superadmin@trendsbird.com`
-  - **Password:** `SuperAdmin@123`
-- **Catalog Manager**:
-  - **Email:** `catalog@trendsbird.com`
-  - **Password:** `Catalog@123`
+Base Route Prefix: `/api` or `/api/v1`
 
-*(Note: Catalog Manager lacks `user:*`, `role:*`, and `permission:*` permissions, allowing you to test 403 Forbidden status codes).*
+| Module | Method | Endpoint | Required Permission | Description |
+|---|---|---|---|---|
+| **Auth** | `POST` | `/auth/login` | Public | Login credentials check & Access/Refresh token issuance |
+| **Auth** | `GET` | `/auth/session` | Authenticated | Retrieve current user session profile |
+| **Auth** | `POST` | `/auth/refresh` | Public | Rotate refresh token & issue new access token |
+| **Auth** | `POST` | `/auth/logout` | Authenticated | Revoke refresh token hash in database |
+| **Permissions** | `POST` | `/permissions` | `permission:create` | Create a new permission entry |
+| **Permissions** | `GET` | `/permissions` | `permission:read` | List permissions with search & pagination |
+| **Roles** | `POST` | `/roles` | `role:create` | Create a new role |
+| **Roles** | `POST` | `/roles/:id/permissions` | `role:update` | Assign permission to role |
+| **Roles** | `DELETE` | `/roles/:id/permissions/:pid` | `role:update` | Remove permission from role (Lockout guarded) |
+| **Users** | `POST` | `/users` | `user:create` | Provision new internal user (No public signup) |
+| **Users** | `PATCH` | `/users/:id` | `user:update` | Update user details (Self-escalation guarded) |
+| **Media** | `POST` | `/media/upload` | `media:create` | Upload single file (Sharp WebP + Supabase Cloud) |
+| **Media** | `POST` | `/media/upload-bulk` | `media:create` | Upload multiple files in a single request |
+| **Categories** | `POST` | `/categories` | `category:create` | Create parent/child category |
+| **Categories** | `GET` | `/categories?tree=true` | `category:read` | List category tree structure |
+| **Brands** | `POST` | `/brands` | `brand:create` | Create brand entry |
+| **Attributes** | `POST` | `/attributes` | `attribute:create` | Create parent attribute (e.g. Color) |
+| **Attributes** | `POST` | `/attributes/:id/values` | `attribute:create` | Create nested attribute value (e.g. Red) |
+| **Products** | `POST` | `/products` | `product:create` | Create Simple/Variable product inside DB transaction |
+| **Products** | `GET` | `/products` | `product:read` | List products with filters, search, and relations |
 
 ---
 
-## API Endpoints Reference
+## 🌐 Deployment Instructions (Vercel Serverless)
 
-### 🔐 Authentication (`/api/auth`)
-- `POST /api/auth/login` - Login with credentials (returns access and refresh tokens).
-- `POST /api/auth/refresh` - Rotate tokens (requires `refreshToken` in body).
-- `POST /api/auth/logout` - Revokes refresh token (requires Bearer token header).
-- `GET /api/auth/session` - Returns logged in user profile (requires Bearer token header).
+1. Import this repository into your **Vercel Dashboard**.
+2. Set the root directory to `server/` (if part of a monorepo) or root.
+3. Configure your Environment Variables in **Vercel Project Settings -> Environment Variables** (matching `.env.example`).
+4. Click **Deploy**. Vercel will automatically build and route incoming requests via `api/index.ts` and `vercel.json`.
 
-### 👥 Users (`/api/users`)
-- `POST /api/users` - Create user (Protected, `user:create`).
-- `GET /api/users` - Get all users (Protected, `user:read`).
-- `GET /api/users/:id` - Get user by ID (Protected, `user:read`).
-- `PATCH /api/users/:id` - Update user (Protected, `user:update` + Self-Escalation guard).
-- `DELETE /api/users/:id` - Delete user (Protected, `user:delete`).
+---
 
-### 🛡️ Roles & Permissions (`/api/roles` & `/api/permissions`)
-- `POST /api/roles` - Create role (Protected, `role:create`).
-- `POST /api/roles/:id/permissions` - Assign permission to role (Protected, `role:update`).
-- `DELETE /api/roles/:id/permissions/:pid` - Remove permission from role (Protected, `role:update` + Last `role:update` check).
-- `DELETE /api/roles/:id` - Delete role (Protected, `role:delete` + check if active users hold it).
-
-### 📁 Media (`/api/media`)
-- `POST /api/media/upload` - Upload file (Protected, `media:create`, accepts `file` field in multipart form).
-- `GET /api/media` - Get all media (Protected, `media:read`).
-- `DELETE /api/media/:id` - Delete media (Protected, `media:delete` + check if attached to products).
-
-### 📁 Catalog Categories (`/api/categories`)
-- `POST /api/categories` - Create Category (Protected, `category:create`).
-- `GET /api/categories` - Get Categories (add query parameter `?tree=true` for JSON tree structure).
-- `PATCH /api/categories/:id` - Update Category (Protected, `category:update` + circular cycle check).
-- `DELETE /api/categories/:id` - Delete Category (Protected, `category:delete` + checks if referenced).
-
-### 🏷️ Brands (`/api/brands`)
-- `POST /api/brands` - Create Brand (Protected, `brand:create`).
-- `DELETE /api/brands/:id` - Delete Brand (Protected, `brand:delete` + check if product references exist).
-
-### ⚙️ Attributes (`/api/attributes`)
-- `POST /api/attributes` - Create Attribute.
-- `POST /api/attributes/:id/values` - Create Attribute value (e.g., Red).
-- `DELETE /api/attributes/:id/values/:vid` - Delete Attribute value.
-
-### 📦 Products (`/api/products`)
-- `POST /api/products` - Create simple/variable product (Protected, `product:create`).
-- `GET /api/products` - Query products with search, pagination, category & brand filtering.
-- `DELETE /api/products/:id` - Delete product.
+## 📜 License
+This project is proprietary software for Trends Bird E-Commerce Dashboard.
