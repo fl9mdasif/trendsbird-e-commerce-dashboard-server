@@ -3,6 +3,7 @@ import { AuthRoutes } from "../modules/auth/routes.auth";
 import { PermissionRoutes } from "../modules/permission/route.permission";
 import { RoleRoutes } from "../modules/role/route.role";
 import { UserRoutes } from "../modules/user/route.user";
+import { MediaRoutes } from "../modules/media/route.media";
 
 const router = express.Router();
 
@@ -23,10 +24,10 @@ const moduleRoutes = [
     path: "/users",
     route: UserRoutes,
   },
-  // {
-  //   path: "/media",
-  //   route: MediaRoutes,
-  // },
+  {
+    path: "/media",
+    route: MediaRoutes,
+  },
   // {
   //   path: "/categories",
   //   route: CategoryRoutes,

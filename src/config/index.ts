@@ -56,6 +56,6 @@ export default {
   },
   file: {
     max_size_mb: env.MAX_FILE_SIZE_MB,
-    allowed_mime_types: env.ALLOWED_MIME_TYPES.split(","),
+    allowed_mime_types: env.ALLOWED_MIME_TYPES.split(",").map((t) => t.trim().replace(/['"]/g, "")),
   }
 };
