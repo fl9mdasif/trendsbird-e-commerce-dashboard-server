@@ -4,6 +4,7 @@ import sendResponse from "../../../shared/sendResponse";
 import { userService } from "./service.user";
 import httpStatus from "http-status";
 import pick from "../../../shared/pick";
+import { AuthenticatedRequest } from "../../interfaces/auth.interface";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.createUser(req.body);
@@ -37,8 +38,8 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateUser = catchAsync(async (req: Request & { user?: any }, res: Response) => {
-  const requestingUserId = req.user.id;
+const updateUser = catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+  const requestingUserId = req.user!.id;
   const result = await userService.updateUser(requestingUserId, req.params.id as string, req.body);
   sendResponse(res, {
     statusCode: httpStatus.OK,

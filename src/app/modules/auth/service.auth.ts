@@ -8,8 +8,9 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../../../helpers/jwtHelpers";
+import { ILoginPayload } from "../../interfaces/auth.interface";
 
-const loginUser = async (payload: any) => {
+const loginUser = async (payload: ILoginPayload) => {
   const user = await prisma.user.findUnique({
     where: { email: payload.email },
     include: {

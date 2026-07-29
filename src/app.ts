@@ -3,44 +3,43 @@ import cors from "cors";
 import router from "./app/routes";
 import httpStatus from "http-status";
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
-// import cookieParser from "cookie-parser";
 
 const app: Application = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://pet-adoption-care.vercel.app"
-    ],
+    origin: "*",
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   })
 );
 
-// parse
+// Body Parsers
 app.use(express.json());
-// app.use(cookieParser());
-
-//use
-
 app.use(
   express.urlencoded({
     extended: true,
   })
 );
 
+// Root Health Endpoint
 app.get("/", (req: Request, res: Response) => {
-  res.send({
-    Message: "trends-bird-server",
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Trends Bird E-commerce Dashboard Backend API Server Running",
+    status: "healthy",
   });
 });
 
+// API Route Handlers (Supported under both /api and /api/v1)
 app.use("/api/v1", router);
+// app.use("/api", router);
 
+// Global Error Handler Middleware
 app.use(globalErrorHandler);
 
-app.use((req: Request, res: Response, next: NextFunction) => {
+// 404 Handler
+app.use((req: Request, res: Response) => {
   res.status(httpStatus.NOT_FOUND).json({
     success: false,
     message: "API NOT FOUND!",

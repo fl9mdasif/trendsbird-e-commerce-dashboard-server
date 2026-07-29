@@ -1,8 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import { sendError } from "../../shared/sendResponse";
 
+export interface IAppError extends Error {
+  statusCode?: number;
+  code?: string;
+  meta?: {
+    target?: string[];
+    cause?: string;
+  };
+}
+
 const globalErrorHandler = (
-  err: any,
+  err: IAppError,
   req: Request,
   res: Response,
   next: NextFunction
@@ -32,7 +41,7 @@ const globalErrorHandler = (
   if (
     message === "Password incorrect!" ||
     message === "Invalid credentials" ||
-    message === "Record not found" && req.path.endsWith("/login")
+    (message === "Record not found" && req.path.endsWith("/login"))
   ) {
     message = "Invalid credentials";
     statusCode = 401;

@@ -5,7 +5,22 @@ import * as bcrypt from "bcrypt";
 import config from "../../../config";
 import { paginationHelper } from "../../../helpers/paginationHelper";
 
-const createUser = async (data: any) => {
+export interface ICreateUserPayload {
+  email: string;
+  password: string;
+  name: string;
+  roleId: string;
+}
+
+export interface IUpdateUserPayload {
+  email?: string;
+  password?: string;
+  name?: string;
+  roleId?: string;
+  active?: boolean;
+}
+
+const createUser = async (data: ICreateUserPayload) => {
   // Check if email already exists
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
@@ -113,7 +128,7 @@ const getSingleUser = async (id: string) => {
   });
 };
 
-const updateUser = async (requestingUserId: string, targetUserId: string, data: any) => {
+const updateUser = async (requestingUserId: string, targetUserId: string, data: IUpdateUserPayload) => {
   // Check user self-escalation guard
   if (requestingUserId === targetUserId && data.roleId !== undefined) {
     throw new ApiError(httpStatus.FORBIDDEN, "Cannot change your own role");

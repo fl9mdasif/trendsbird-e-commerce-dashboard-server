@@ -1,10 +1,11 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 import { verifyAccessToken } from "../../helpers/jwtHelpers";
 import prisma from "../../shared/prisma";
 import { sendError } from "../../shared/sendResponse";
+import { AuthenticatedRequest, RolePermissionWithPermission } from "../interfaces/auth.interface";
 
 export const authMiddleware = async (
-  req: Request & { user?: any },
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -49,7 +50,7 @@ export const authMiddleware = async (
       return res.status(401).json(sendError("Unauthorized", 401));
     }
 
-    req.user = user;
+    req.user = user as any;
     next();
   } catch (error) {
     return res.status(401).json(sendError("Invalid or expired token", 401));
@@ -57,13 +58,13 @@ export const authMiddleware = async (
 };
 
 export const requirePermission = (permission: string) => {
-  return (req: Request & { user?: any }, res: Response, next: NextFunction) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user || !req.user.role) {
       return res.status(403).json(sendError("Insufficient permissions", 403));
     }
 
     const permissions: string[] = req.user.role.permissions.map(
-      (rp: any) => rp.permission.name
+      (rp: RolePermissionWithPermission) => rp.permission.name
     );
 
     // Check direct match
