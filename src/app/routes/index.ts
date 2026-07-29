@@ -7,6 +7,7 @@ import { MediaRoutes } from "../modules/media/route.media";
 import { CategoryRoutes } from "../modules/category/route.category";
 import { BrandRoutes } from "../modules/brand/route.brand";
 import { AttributeRoutes } from "../modules/attribute/route.attribute";
+import { ProductRoutes } from "../modules/product/route.product";
 
 const router = express.Router();
 
@@ -43,10 +44,10 @@ const moduleRoutes = [
     path: "/attributes",
     route: AttributeRoutes,
   },
-  // {
-  //   path: "/products",
-  //   route: ProductRoutes,
-  // },
+  {
+    path: "/products",
+    route: ProductRoutes,
+  },
 ];
 
 moduleRoutes.forEach((route) => {

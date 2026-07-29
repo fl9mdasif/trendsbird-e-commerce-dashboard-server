@@ -21,16 +21,21 @@ const uploadMedia = async (file: Express.Multer.File) => {
     );
   }
 
-  const isImage = file.mimetype.startsWith("image/");
   const fileExt = file.originalname.split(".").pop() || "";
-  const baseName = file.originalname.split(".").shift()?.replace(/[^a-zA-Z0-9]/g, "") || "file";
+  const rawName = file.originalname.split(".").slice(0, -1).join(".") || "file";
+  const baseName = rawName
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
   const uniqueId = Date.now() + "-" + Math.round(Math.random() * 1e9);
+  const isImage = file.mimetype.startsWith("image/");
 
   let mainBuffer = file.buffer;
   let thumbBuffer: Buffer | null = null;
 
-  let mainFilename = `${uniqueId}-${baseName}.${fileExt}`;
-  let thumbFilename = `thumb-${uniqueId}-${baseName}.${fileExt}`;
+  let mainFilename = `${baseName}.${fileExt}`;
+  let thumbFilename = `thumb-${baseName}.${fileExt}`;
   let mimeType = file.mimetype;
 
   // Image resizing and thumbnail using Sharp
@@ -42,7 +47,7 @@ const uploadMedia = async (file: Express.Multer.File) => {
         .toFormat("webp")
         .toBuffer();
       
-      mainFilename = `${uniqueId}-${baseName}.webp`;
+      mainFilename = `${baseName}.webp`;
       mimeType = "image/webp";
 
       // 2. Generate thumbnail (200x200 cover)
@@ -51,7 +56,7 @@ const uploadMedia = async (file: Express.Multer.File) => {
         .toFormat("webp")
         .toBuffer();
       
-      thumbFilename = `thumb-${uniqueId}-${baseName}.webp`;
+      thumbFilename = `thumb-${baseName}.webp`;
     } catch (err) {
       // Fallback to original buffer on error
       mainBuffer = file.buffer;
@@ -174,8 +179,23 @@ const getAllMedia = async (options: any) => {
   };
 };
 
+const uploadMultipleMedia = async (files: Express.Multer.File[]) => {
+  if (!files || files.length === 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Please upload at least one file");
+  }
+
+  const results = [];
+  for (const file of files) {
+    const result = await uploadMedia(file);
+    results.push(result);
+  }
+
+  return results;
+};
+
 export const mediaService = {
   uploadMedia,
+  uploadMultipleMedia,
   deleteMedia,
   getAllMedia,
 };
