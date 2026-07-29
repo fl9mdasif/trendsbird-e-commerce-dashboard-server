@@ -6,6 +6,7 @@ import { UserRoutes } from "../modules/user/route.user";
 import { MediaRoutes } from "../modules/media/route.media";
 import { CategoryRoutes } from "../modules/category/route.category";
 import { BrandRoutes } from "../modules/brand/route.brand";
+import { AttributeRoutes } from "../modules/attribute/route.attribute";
 
 const router = express.Router();
 
@@ -38,10 +39,10 @@ const moduleRoutes = [
     path: "/brands",
     route: BrandRoutes,
   },
-  // {
-  //   path: "/attributes",
-  //   route: AttributeRoutes,
-  // },
+  {
+    path: "/attributes",
+    route: AttributeRoutes,
+  },
   // {
   //   path: "/products",
   //   route: ProductRoutes,
