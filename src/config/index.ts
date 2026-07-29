@@ -9,10 +9,18 @@ const envSchema = z.object({
   PORT: z.string().optional().transform((val) => val ? parseInt(val, 10) : 3001),
   DATABASE_URL: z.string(),
   DIRECT_URL: z.string().optional(),
-  ACCESS_JWT_SECRET: z.string().min(32, "Access JWT secret must be at least 32 characters long").default("your-access-secret-min-32-chars-long"),
-  REFRESH_JWT_SECRET: z.string().min(32, "Refresh JWT secret must be at least 32 characters long").default("your-refresh-secret-min-32-chars-long"),
-  ACCESS_JWT_EXPIRES: z.string().default("15m"),
-  REFRESH_JWT_EXPIRES: z.string().default("7d"),
+  ACCESS_JWT_SECRET: z.string().default(
+    process.env.ACCESS_JWT_SECRET || process.env.ACCESS_TOEKE_SECRET || process.env.ACCESS_TOKEN_SECRET || "your-access-secret-min-32-chars-long"
+  ),
+  REFRESH_JWT_SECRET: z.string().default(
+    process.env.REFRESH_JWT_SECRET || process.env.REFRESH_TOKEN_SECRET || "your-refresh-secret-min-32-chars-long"
+  ),
+  ACCESS_JWT_EXPIRES: z.string().default(
+    process.env.ACCESS_JWT_EXPIRES || process.env.ACCESS_TOEKE_EXPIRES_IN || process.env.ACCESS_TOKEN_EXPIRES_IN || "15m"
+  ),
+  REFRESH_JWT_EXPIRES: z.string().default(
+    process.env.REFRESH_JWT_EXPIRES || process.env.REFRESH_TOKEN_EXPIRES_IN || "7d"
+  ),
   BCRYPT_ROUNDS: z.string().optional().transform((val) => val ? parseInt(val, 10) : 12),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_KEY: z.string().optional(),
