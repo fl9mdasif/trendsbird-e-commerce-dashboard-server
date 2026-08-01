@@ -7,7 +7,7 @@ import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 const app: Application = express();
 
 const allowedOrigins = [
-  
+  'https://trendsbird-e-commerce-dashboard-cli-wine.vercel.app/login',
   'http://localhost:3000'
 ];
 
