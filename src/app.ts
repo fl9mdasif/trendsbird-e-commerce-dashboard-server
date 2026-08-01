@@ -6,12 +6,26 @@ import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 
 const app: Application = express();
 
+const allowedOrigins = [
+  
+  'http://localhost:3000'
+];
+
 app.use(
   cors({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, Postman)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
-  })
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  }),
 );
 
 // Body Parsers
