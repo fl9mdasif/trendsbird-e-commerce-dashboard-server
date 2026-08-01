@@ -35,7 +35,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/v1", router);
 // app.use("/api", router);
 
-// Global Error Handler Middleware
+// Global Error Handler Middleware 
 app.use(globalErrorHandler);
 
 // 404 Handler

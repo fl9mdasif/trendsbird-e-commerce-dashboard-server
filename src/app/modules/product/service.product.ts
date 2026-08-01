@@ -33,8 +33,6 @@ const createProduct = async (data: any) => {
   // Rule checks
   if (!data.hasVariants) {
     // Simple Product Rules:
-    // - MUST have price, stock, sku
-    // - MUST NOT have variants
     if (data.price === undefined || data.price === null) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Simple product must have a price");
     }
@@ -55,8 +53,6 @@ const createProduct = async (data: any) => {
     }
   } else {
     // Variable Product Rules:
-    // - MUST have variants with own price/stock/sku
-    // - MUST NOT have price/stock/sku on product
     if (data.price || data.salePrice || data.stock || data.sku) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -86,8 +82,6 @@ const createProduct = async (data: any) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Variant sale price must be less than price");
       }
 
-      // Check duplicate variant combination:
-      // const comboKey = attrs.map(a => `${a.attributeId}:${a.attributeValueId}`).sort().join('|');
       const key = v.attributes
         .map((a: any) => `${a.attributeId}:${a.attributeValueId}`)
         .sort()
@@ -104,7 +98,6 @@ const createProduct = async (data: any) => {
 
   // Execute entire product creation inside a transaction
   return await prisma.$transaction(async (tx: any) => {
-    // 1. Create product
     const product = await tx.product.create({
       data: {
         name: data.name,
@@ -118,14 +111,12 @@ const createProduct = async (data: any) => {
       },
     });
 
-    // 2. Associate categories
     const categoryLinks = data.categoryIds.map((catId: string) => ({
       productId: product.id,
       categoryId: catId,
     }));
     await tx.productCategory.createMany({ data: categoryLinks });
 
-    // 3. Associate media attachments
     if (data.mediaIds && data.mediaIds.length > 0) {
       const mediaLinks = data.mediaIds.map((mediaId: string) => ({
         productId: product.id,
@@ -134,7 +125,6 @@ const createProduct = async (data: any) => {
       await tx.mediaAttachment.createMany({ data: mediaLinks });
     }
 
-    // 4. Create variants and variant attributes if variable product
     if (data.hasVariants) {
       for (const v of data.variants) {
         const variant = await tx.variant.create({
@@ -173,11 +163,23 @@ const getAllProducts = async (options: {
 
   const andConditions: any[] = [];
 
+  // FIX 1: Search now includes Name, Description, SKU, Brand Name, and Category/Subcategory Names
   if (options.search) {
     andConditions.push({
       OR: [
         { name: { contains: options.search, mode: "insensitive" } },
         { description: { contains: options.search, mode: "insensitive" } },
+        { sku: { contains: options.search, mode: "insensitive" } },
+        { brand: { name: { contains: options.search, mode: "insensitive" } } },
+        {
+          categories: {
+            some: {
+              category: {
+                name: { contains: options.search, mode: "insensitive" },
+              },
+            },
+          },
+        },
       ],
     });
   }
@@ -186,11 +188,36 @@ const getAllProducts = async (options: {
     andConditions.push({ brandId: options.brandId });
   }
 
+  // FIX 2: Deep Category & Subcategory Tree matching (Parents, Children, Sub-children)
   if (options.categoryId) {
+    const allCategories = await prisma.category.findMany({
+      select: { id: true, parentId: true },
+    });
+
+    const targetId = options.categoryId;
+    const categoryIdsSet = new Set<string>([targetId]);
+
+    // Gather all Parent / Ancestor Category IDs
+    let currentCat = allCategories.find((c: { id: string; parentId: string | null }) => c.id === targetId);
+    while (currentCat && currentCat.parentId) {
+      categoryIdsSet.add(currentCat.parentId);
+      currentCat = allCategories.find((c: { id: string; parentId: string | null }) => c.id === currentCat!.parentId);
+    }
+
+    // Gather all Child / Subcategory IDs recursively
+    const gatherChildren = (parentId: string) => {
+      const children = allCategories.filter((c: { id: string; parentId: string | null }) => c.parentId === parentId);
+      children.forEach((child: { id: string; parentId: string | null }) => {
+        categoryIdsSet.add(child.id);
+        gatherChildren(child.id);
+      });
+    };
+    gatherChildren(targetId);
+
     andConditions.push({
       categories: {
         some: {
-          categoryId: options.categoryId,
+          categoryId: { in: Array.from(categoryIdsSet) },
         },
       },
     });
@@ -274,7 +301,6 @@ const getSingleProduct = async (id: string) => {
 };
 
 const deleteProduct = async (id: string) => {
-  // Related dependencies in variant, variantAttribute, productCategory, mediaAttachment are deleted via cascade in Prisma.
   return await prisma.product.delete({
     where: { id },
   });
