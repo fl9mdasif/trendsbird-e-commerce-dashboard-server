@@ -3,12 +3,18 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import config from "../config";
 
-const pool = new Pool({
-  connectionString: config.database_url,
-});
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const createPrismaInstance = () => {
+  const pool = new Pool({
+    connectionString: config.database_url,
+  });
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ adapter });
+};
 
-export default prisma;
-export { prisma }; 
+export const prisma = globalForPrisma.prisma || createPrismaInstance();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+export default prisma; 

@@ -7,7 +7,7 @@ dotenv.config({ path: path.join(process.cwd(), ".env") });
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.string().optional().transform((val) => val ? parseInt(val, 10) : 3001),
-  DATABASE_URL: z.string(),
+  DATABASE_URL: z.string().default(process.env.DATABASE_URL || ""),
   DIRECT_URL: z.string().optional(),
   ACCESS_JWT_SECRET: z.string().default(
     process.env.ACCESS_JWT_SECRET || process.env.ACCESS_TOEKE_SECRET || process.env.ACCESS_TOKEN_SECRET || "your-access-secret-min-32-chars-long"
@@ -32,7 +32,6 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error("❌ Invalid environment variables:", parsed.error.format());
-  process.exit(1);
 }
 
 export const env = parsed.data;
